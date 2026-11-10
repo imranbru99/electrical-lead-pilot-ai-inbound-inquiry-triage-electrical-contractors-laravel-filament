@@ -1,0 +1,59 @@
+services:
+  app:
+    build: .
+    container_name: electrical-lead-pilot-app
+    ports:
+      - "8104:8000"
+    environment:
+      APP_NAME: ElectricalLeadPilot
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8104
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: electrical_lead_pilot
+      DB_USERNAME: elp
+      DB_PASSWORD: secret
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+      SESSION_DRIVER: database
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - ./storage:/var/www/html/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.4
+    container_name: electrical-lead-pilot-mysql
+    environment:
+      MYSQL_DATABASE: electrical_lead_pilot
+      MYSQL_USER: elp
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    ports:
+      - "33064:3306"
+    volumes:
+      - elp_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootsecret"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: electrical-lead-pilot-redis
+    ports:
+      - "63794:6379"
+    restart: unless-stopped
+
+volumes:
+  elp_mysql_data:
